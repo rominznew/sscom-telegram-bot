@@ -3,12 +3,14 @@ from bs4 import BeautifulSoup
 import time
 import hashlib
 
-# 🔧 Настройки: токен Telegram-бота и ваш чат ID
-TELEGRAM_TOKEN = '8035058826:AAEo-dZsphpem8hEEuMQk0-izGG7HurUUZU'  # <-- замените на свой токен от BotFather
-CHAT_ID = '1213277009'            # <-- замените на свой Telegram ID
+# 🔧 Настройки: токен Telegram-бота и ваш чат ID из переменных окружения
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+
+if not TELEGRAM_TOKEN or not CHAT_ID:
+    raise ValueError("❌ TELEGRAM_TOKEN или CHAT_ID не установлены в переменных окружения")
 
 # 🌐 URL страницы с объявлениями
-URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
 
 # 🧠 Множество для хранения уже отправленных объявлений (по хэшу)
 sent_hashes = set()
