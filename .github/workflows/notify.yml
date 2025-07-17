@@ -1,0 +1,28 @@
+name: SS.com Notifier
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # ⏰ запуск каждые 10 минут
+  workflow_dispatch:        # 🖐 возможность ручного запуска
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Скачать код из GitHub
+        uses: actions/checkout@v3
+
+      - name: 🐍 Установить Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: 📦 Установить зависимости
+        run: pip install -r requirements.txt
+
+      - name: 🚀 Запустить бота
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python sscom_bot.py
