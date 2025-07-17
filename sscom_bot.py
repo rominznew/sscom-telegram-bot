@@ -56,13 +56,12 @@ def send_telegram_message(text):
 # 🔁 Основной цикл: проверка каждые 5 минут
 if __name__ == "__main__":
     print("▶️ Бот запущен. Проверка объявлений...")
-    while True:
-        try:
-            ads = get_latest_ads()
-            for title, url in ads:
-                message = f"🔔 Новое объявление:\n{title}\n{url}"
-                send_telegram_message(message)
-                print(f"📬 Отправлено: {title}")
-        except Exception as e:
-            print(f"⚠️ Ошибка: {e}")
-        time.sleep(300)  # ждать 5 минут
+    try:
+        ads = get_latest_ads()
+        for title, url in ads:
+            message = f"🔔 Новое объявление:\n{title}\n{url}"
+            send_telegram_message(message)
+            print(f"📬 Отправлено: {title}")
+    except Exception as e:
+        print(f"⚠️ Ошибка: {e}")
+
