@@ -1,22 +1,29 @@
-name: Test Telegram Bot
+import os
+import requests
 
-on:
-  workflow_dispatch:  # запуск вручную
+def main():
+    token = os.getenv('TELEGRAM_TOKEN')
+    chat_id = os.getenv('CHAT_ID')
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    if not token or not chat_id:
+        print("Ошибка: TELEGRAM_TOKEN или CHAT_ID не заданы в переменных окружения.")
+        return
 
-      - name: Установить зависимости
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
+    message = "Test message from GitHub Actions"
 
-      - name: Запуск test_bot.py
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python test_bot.py
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message
+    }
+
+    response = requests.post(url, data=payload)
+
+    if response.status_code == 200:
+        print("Сообщение успешно отправлено.")
+    else:
+        print(f"Ошибка при отправке сообщения: {response.status_code}")
+        print("Ответ:", response.text)
+
+if __name__ == "__main__":
+    main()
