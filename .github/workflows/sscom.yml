@@ -21,6 +21,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Лог времени
+        run: echo "Запуск по расписанию: $(date)"
+
       - name: Запустить бота
         run: python sscom_bot.py
         env:
