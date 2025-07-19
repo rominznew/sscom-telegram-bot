@@ -1,13 +1,13 @@
-name: SS.com Notifier   # Название workflow, которое будет видно в GitHub Actions
+name: SS.com Notifier
 
 on:
+  workflow_dispatch:       # позволяет запускать вручную
   schedule:
-    - cron: "*/10 * * * *"  # Запуск каждые 10 минут
-  workflow_dispatch:         # Возможность запускать вручную
+    - cron: "*/10 * * * *" # запуск каждые 10 минут (по UTC)
 
 jobs:
   run-bot:
-    runs-on: ubuntu-latest    # GitHub будет использовать Linux-среду
+    runs-on: ubuntu-latest
     steps:
       - name: Скачать код из GitHub
         uses: actions/checkout@v3
@@ -15,14 +15,14 @@ jobs:
       - name: Установить Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.11'
 
       - name: Установить зависимости
         run: |
           pip install -r requirements.txt
 
       - name: Запустить бота
+        run: python sscom_bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python sscom_bot.py
