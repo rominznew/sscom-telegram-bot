@@ -1,9 +1,9 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:       # позволяет запускать вручную
+  workflow_dispatch:       # ручной запуск
   schedule:
-    - cron: "*/10 * * * *" # запуск каждые 10 минут (по UTC)
+    - cron: "*/10 * * * *" # запуск каждые 10 минут (UTC)
 
 jobs:
   run-bot:
@@ -19,13 +19,26 @@ jobs:
 
       - name: Установить зависимости
         run: |
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Лог времени
-        run: echo "Запуск по расписанию: $(date)"
+        run: echo "Запуск по расписанию: $(date -u)"
 
-      - name: Запустить бота
-        run: python sscom_bot.py
+      - name: Проверить переменные окружения
+        run: |
+          if [ -z "${{ secrets.TELEGRAM_TOKEN }}" ]; then
+            echo "❌ TELEGRAM_TOKEN не задан!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CHAT_ID }}" ]; then
+            echo "❌ CHAT_ID не задан!"
+            exit 1
+          fi
+          echo "✅ Переменные окружения заданы."
+
+      - name: Запустить бота с логами
+        run: |
+          python sscom_bot.py || echo "⚠️ Скрипт завершился с ошибкой!"
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
