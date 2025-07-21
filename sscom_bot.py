@@ -1,27 +1,22 @@
 import os
+import json
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
-# ==============================
-# Настройки из переменных окружения
-# ==============================
+# ==== Конфигурация ====
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-
 URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
+SEEN_FILE = "seen_ads.json"
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
 }
 
-print("✅ TELEGRAM_TOKEN и CHAT_ID получены. (CHAT_ID=***)")
-print("▶️ Бот запущен. Проверка объявлений...")
 
-
-# ==============================
-# Отправка сообщений в Telegram
-# ==============================
+# ==== Функции ====
 def send_telegram_message(message: str):
+    """Отправляет сообщение в Telegram."""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message}
     try:
@@ -34,44 +29,67 @@ def send_telegram_message(message: str):
         print(f"❌ Ошибка при отправке в Telegram: {e}")
 
 
-# ==============================
-# Парсинг объявлений
-# ==============================
 def get_ads():
+    """Парсит список объявлений с SS.com."""
     try:
         print(f"🌐 Загружаем страницу: {URL}")
         response = requests.get(URL, headers=HEADERS, timeout=20)
-
         if response.status_code != 200:
             print(f"❌ Ошибка загрузки страницы: {response.status_code}")
             return []
 
-        html = response.text
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(response.text, "html.parser")
+        rows = soup.select("tr[id^=tr_]")
 
-        # Найдем таблицу объявлений
-        ads = soup.select("tr[id^=tr_]")  # SS.com использует <tr id="tr_12345">
+        ads = []
+        for row in rows:
+            link = row.select_one("a")
+            if link and "ss.com" in link.get("href", ""):
+                ads.append(link["href"])
         print(f"🔍 Найдено {len(ads)} объявлений на странице.")
-
-        # Если объявлений 0 — сохраняем HTML для отладки
-        if len(ads) == 0:
-            with open("debug.html", "w", encoding="utf-8") as f:
-                f.write(html)
-            print("⚠️ HTML страницы сохранен в debug.html (нет объявлений).")
-
         return ads
-
     except Exception as e:
-        print(f"❌ Ошибка при парсинге: {e}")
+        print(f"❌ Ошибка парсинга: {e}")
         return []
 
 
-# ==============================
-# Основной код
-# ==============================
-ads = get_ads()
+def load_seen_ads():
+    """Загружает список уже обработанных объявлений."""
+    if os.path.exists(SEEN_FILE):
+        try:
+            with open(SEEN_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except Exception as e:
+            print(f"⚠️ Ошибка загрузки {SEEN_FILE}: {e}")
+    return set()
 
-if not ads:
-    print("ℹ️ Новых объявлений нет.")
+
+def save_seen_ads(ads):
+    """Сохраняет список обработанных объявлений."""
+    try:
+        with open(SEEN_FILE, "w", encoding="utf-8") as f:
+            json.dump(list(ads), f)
+    except Exception as e:
+        print(f"⚠️ Ошибка сохранения {SEEN_FILE}: {e}")
+
+
+# ==== Основной код ====
+if not TELEGRAM_TOKEN or not CHAT_ID:
+    print("❌ TELEGRAM_TOKEN или CHAT_ID не установлены.")
+    exit(1)
+
+print(f"✅ TELEGRAM_TOKEN и CHAT_ID получены. (CHAT_ID={CHAT_ID})")
+print("▶️ Бот запущен. Проверка объявлений...")
+
+ads = get_ads()
+seen_ads = load_seen_ads()
+
+new_ads = [ad for ad in ads if ad not in seen_ads]
+
+if new_ads:
+    message = f"Найдено {len(new_ads)} новых объявлений!\n" + "\n".join(new_ads[:5])
+    send_telegram_message(message)
+    save_seen_ads(seen_ads.union(new_ads))
+    print(f"✅ Сохранено {len(new_ads)} новых объявлений.")
 else:
-    send_telegram_message(f"Найдено {len(ads)} новых объявлений!")
+    print("ℹ️ Новых объявлений нет.")
