@@ -1,37 +1,40 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:        # запуск вручную
+  workflow_dispatch:       # Запуск вручную
   schedule:
-    - cron: "*/10 * * * *"  # каждые 10 минут (по UTC)
+    - cron: "*/10 * * * *" # Запуск каждые 10 минут (UTC)
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Скачать код
+      - name: Скачать код из GitHub
         uses: actions/checkout@v3
 
-      - name: 🗂 Кэшировать seen_ads.json
-        uses: actions/cache@v3
-        with:
-          path: seen_ads.json
-          key: seen-ads-cache
-
-      - name: 🐍 Установить Python
+      - name: Установить Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: 📦 Установить зависимости
+      - name: Установить зависимости
         run: |
-          pip install requests beautifulsoup4
+          pip install -r requirements.txt
 
-      - name: 🕒 Лог времени
-        run: echo "Запуск по расписанию: $(date)"
+      - name: Лог времени
+        run: echo "⏰ Запуск по расписанию: $(date)"
 
-      - name: 🚀 Запустить бота
+      - name: Запустить бота
         run: python sscom_bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+
+      - name: Проверить файл seen_ads.json
+        run: |
+          if [ -f seen_ads.json ]; then
+            echo "📂 seen_ads.json существует. Содержимое:"
+            cat seen_ads.json
+          else
+            echo "⚠️ seen_ads.json не найден!"
+          fi
