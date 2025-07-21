@@ -1,44 +1,41 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:       # ручной запуск
+  workflow_dispatch:       # запуск вручную
   schedule:
-    - cron: "*/10 * * * *" # запуск каждые 10 минут (UTC)
+    - cron: "*/10 * * * *" # каждые 10 минут (по UTC)
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Скачать код из GitHub
+      - name: 📥 Скачать код из GitHub
         uses: actions/checkout@v3
 
-      - name: Установить Python
+      - name: 🗂 Кэшировать seen_ads.json
+        uses: actions/cache@v3
+        with:
+          path: seen_ads.json
+          key: seen-ads-cache
+
+      - name: 🐍 Установить Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Установить зависимости
+      - name: 📦 Установить зависимости
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests beautifulsoup4
 
-      - name: Лог времени
-        run: echo "Запуск по расписанию: $(date -u)"
+      - name: 🕒 Лог времени
+        run: echo "Запуск по расписанию: $(date)"
 
-      - name: Проверить переменные окружения
+      - name: 🚀 Запустить бота
         run: |
-          if [ -z "${{ secrets.TELEGRAM_TOKEN }}" ]; then
-            echo "❌ TELEGRAM_TOKEN не задан!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.CHAT_ID }}" ]; then
-            echo "❌ CHAT_ID не задан!"
-            exit 1
-          fi
-          echo "✅ Переменные окружения заданы."
-
-      - name: Запустить бота с логами
-        run: |
-          python sscom_bot.py || echo "⚠️ Скрипт завершился с ошибкой!"
+          echo "=== Старт бота ==="
+          python sscom_bot.py
+          echo "=== Конец работы ==="
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
