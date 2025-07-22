@@ -1,1 +1,4 @@
-[]
+echo "[]" > seen_ads.json
+git add seen_ads.json
+git commit -m "Add seen_ads.json"
+git push
