@@ -1,48 +1,37 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:       # запуск вручную
+  workflow_dispatch:       # Запуск вручную
   schedule:
-    - cron: "*/10 * * * *" # каждые 10 минут (UTC)
+    - cron: "*/10 * * * *" # Запуск каждые 10 минут (UTC)
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Скачать код из GitHub
+      - name: Скачиваем код
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # нужно для git push
-          fetch-depth: 0
+          persist-credentials: true  # Обязательно для git push
 
-      - name: Установить Python
+      - name: Устанавливаем Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Установить зависимости
-        run: |
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install requests beautifulsoup4
+      - name: Устанавливаем зависимости
+        run: pip install -r requirements.txt
 
-      - name: Лог времени
-        run: echo "⏰ Запуск по расписанию: $(date)"
-
-      - name: Запустить бота
+      - name: Запускаем бота
         run: python sscom_bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
 
-      - name: Проверка изменений seen_ads.json
+      - name: Коммитим обновления seen_ads.json
         run: |
-          git status
-          if [[ -n "$(git status --porcelain seen_ads.json)" ]]; then
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add seen_ads.json
-            git commit -m "Обновлён список объявлений [skip ci]"
-            git push
-          else
-            echo "Нет изменений в seen_ads.json"
-          fi
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add seen_ads.json
+          git commit -m "Update seen_ads.json [skip ci]" || echo "Нет изменений"
+          git push
