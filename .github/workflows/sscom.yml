@@ -39,3 +39,10 @@ jobs:
           else
             echo "Файл seen_ads.json не найден!"
           fi
+       - name: Commit updated seen_ads.json
+  run: |
+    git config user.name "github-actions"
+    git config user.email "github-actions@github.com"
+    git add seen_ads.json
+    git commit -m "Update seen_ads.json" || echo "No changes to commit"
+    git push   
