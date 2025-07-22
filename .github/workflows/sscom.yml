@@ -1,7 +1,7 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:       # ручной запуск
+  workflow_dispatch:       # запуск вручную
   schedule:
     - cron: "*/10 * * * *" # каждые 10 минут (UTC)
 
@@ -12,17 +12,8 @@ jobs:
       - name: Скачать код из GitHub
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # важно для git push
-
-      - name: Проверить права на git push
-        run: |
-          echo "🔍 Проверяем доступ к git remote..."
-          git remote -v
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Пробуем сделать тестовый пуш в пустую ветку (без изменений)
-          git commit --allow-empty -m "test-push" || echo "❌ Нет изменений для коммита"
-          git push || echo "⚠️ Ошибка при git push — проверь настройки GITHUB_TOKEN"
+          persist-credentials: true  # нужно для git push
+          fetch-depth: 0
 
       - name: Установить Python
         uses: actions/setup-python@v4
@@ -31,7 +22,11 @@ jobs:
 
       - name: Установить зависимости
         run: |
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests beautifulsoup4
+
+      - name: Лог времени
+        run: echo "⏰ Запуск по расписанию: $(date)"
 
       - name: Запустить бота
         run: python sscom_bot.py
@@ -39,10 +34,15 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
 
-      - name: Сохранить обновлённый seen_ads.json
+      - name: Проверка изменений seen_ads.json
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add seen_ads.json
-          git commit -m "Update seen_ads.json" || echo "⚠️ Нет новых данных для сохранения"
-          git push || echo "⚠️ Ошибка при git push"
+          git status
+          if [[ -n "$(git status --porcelain seen_ads.json)" ]]; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add seen_ads.json
+            git commit -m "Обновлён список объявлений [skip ci]"
+            git push
+          else
+            echo "Нет изменений в seen_ads.json"
+          fi
