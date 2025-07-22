@@ -1,37 +1,41 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:       # Запуск вручную
   schedule:
-    - cron: "*/10 * * * *" # Запуск каждые 10 минут (UTC)
+    - cron: "*/10 * * * *"   # каждые 10 минут
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Скачиваем код
+      - name: Скачать код
         uses: actions/checkout@v3
         with:
-          persist-credentials: true  # Обязательно для git push
+          persist-credentials: true
 
-      - name: Устанавливаем Python
+      - name: Установить Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Устанавливаем зависимости
+      - name: Установить зависимости
         run: pip install -r requirements.txt
 
-      - name: Запускаем бота
+      - name: Запустить бота
         run: python sscom_bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
 
-      - name: Коммитим обновления seen_ads.json
+      - name: Commit seen_ads.json
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add seen_ads.json
-          git commit -m "Update seen_ads.json [skip ci]" || echo "Нет изменений"
-          git push
+          if [ -f seen_ads.json ]; then
+            git config --global user.name 'github-actions'
+            git config --global user.email 'github-actions@github.com'
+            git add seen_ads.json
+            git commit -m "Update seen_ads.json [skip ci]" || echo "No changes to commit"
+            git push
+          else
+            echo "Файл seen_ads.json не найден!"
+          fi
