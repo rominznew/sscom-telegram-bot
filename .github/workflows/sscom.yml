@@ -1,19 +1,18 @@
 name: SS.com Notifier
 
 on:
-  workflow_dispatch:        # Запуск вручную
+  workflow_dispatch: # запуск вручную
   schedule:
-    - cron: "*/10 * * * *"  # Каждые 10 минут (UTC)
+    - cron: "*/10 * * * *" # каждые 10 минут (UTC)
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
     steps:
       - name: Скачать код из GitHub
         uses: actions/checkout@v3
         with:
-          persist-credentials: true   # Нужно для git push
+          persist-credentials: true # нужно для git push
 
       - name: Установить Python
         uses: actions/setup-python@v4
@@ -22,7 +21,7 @@ jobs:
 
       - name: Установить зависимости
         run: |
-          pip install requests beautifulsoup4
+          pip install -r requirements.txt
 
       - name: Запустить бота
         run: python sscom_bot.py
@@ -30,15 +29,10 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
 
-      - name: Проверить изменения seen_ads.json
+      - name: Commit & Push seen_ads.json
         run: |
-          if [ -n "$(git status --porcelain seen_ads.json)" ]; then
-            echo "Файл seen_ads.json изменился, делаем commit..."
-            git config --global user.email "bot@example.com"
-            git config --global user.name "GitHub Actions Bot"
-            git add seen_ads.json
-            git commit -m "Update seen_ads.json [bot]"
-            git push
-          else
-            echo "Файл seen_ads.json без изменений."
-          fi
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add seen_ads.json
+          git commit -m "Update seen_ads.json" || echo "No changes to commit"
+          git push
