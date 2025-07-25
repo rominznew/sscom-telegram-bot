@@ -1,41 +1,37 @@
-name: Run sscom bot
+name: SS.COM Telegram Bot
 
 on:
   schedule:
-    - cron: "*/30 * * * *"  # каждые 30 минут
+    - cron: "*/30 * * * *"   # каждые 30 минут
   workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          persist-credentials: true  # Важно для git push
+          persist-credentials: true  # нужно для git push
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4 python-telegram-bot
+        run: pip install requests beautifulsoup4 python-telegram-bot==13.15
 
-      - name: Run sscom_bot.py
+      - name: Run bot
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python sscom_bot.py
 
-      - name: Show seen_ads.json content
-        run: cat seen_ads.json
-
-      - name: Commit & Push seen_ads.json
+      - name: Commit and push seen_ads.json
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add seen_ads.json
-          git commit -m "Update seen_ads.json" || echo "No changes to commit"
+          git commit -m "Update seen_ads.json [skip ci]" || echo "No changes"
           git push
