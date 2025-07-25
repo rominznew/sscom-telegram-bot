@@ -1,18 +1,19 @@
 name: SS.com Notifier
 
 on:
+  workflow_dispatch:        # Запуск вручную
   schedule:
-    - cron: "*/10 * * * *"   # каждые 10 минут
-  workflow_dispatch:
+    - cron: "*/10 * * * *"  # Каждые 10 минут (UTC)
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Скачать код
+      - name: Скачать код из GitHub
         uses: actions/checkout@v3
         with:
-          persist-credentials: true
+          persist-credentials: true   # Нужно для git push
 
       - name: Установить Python
         uses: actions/setup-python@v4
@@ -20,7 +21,8 @@ jobs:
           python-version: '3.11'
 
       - name: Установить зависимости
-        run: pip install -r requirements.txt
+        run: |
+          pip install requests beautifulsoup4
 
       - name: Запустить бота
         run: python sscom_bot.py
@@ -28,21 +30,15 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
 
-      - name: Commit seen_ads.json
+      - name: Проверить изменения seen_ads.json
         run: |
-          if [ -f seen_ads.json ]; then
-            git config --global user.name 'github-actions'
-            git config --global user.email 'github-actions@github.com'
+          if [ -n "$(git status --porcelain seen_ads.json)" ]; then
+            echo "Файл seen_ads.json изменился, делаем commit..."
+            git config --global user.email "bot@example.com"
+            git config --global user.name "GitHub Actions Bot"
             git add seen_ads.json
-            git commit -m "Update seen_ads.json [skip ci]" || echo "No changes to commit"
+            git commit -m "Update seen_ads.json [bot]"
             git push
           else
-            echo "Файл seen_ads.json не найден!"
+            echo "Файл seen_ads.json без изменений."
           fi
-       - name: Commit updated seen_ads.json
-  run: |
-    git config user.name "github-actions"
-    git config user.email "github-actions@github.com"
-    git add seen_ads.json
-    git commit -m "Update seen_ads.json" || echo "No changes to commit"
-    git push   
