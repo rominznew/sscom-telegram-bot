@@ -9,25 +9,34 @@ from telegram import Bot
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
-
 SEEN_FILE = "seen_ads.json"
 
 # === ФУНКЦИИ ===
 def load_seen_ads():
     if not os.path.exists(SEEN_FILE):
+        print("⚠️ Файл seen_ads.json не найден, создаю новый []")
         with open(SEEN_FILE, "w", encoding="utf-8") as f:
             f.write("[]")
         return []
     try:
         with open(SEEN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            print(f"📖 Загружено {len(data)} хэшей из seen_ads.json")
+            return data
     except json.JSONDecodeError:
+        print("❌ Ошибка чтения JSON, пересоздаю файл.")
+        with open(SEEN_FILE, "w", encoding="utf-8") as f:
+            f.write("[]")
         return []
 
 def save_seen_ads(seen_ads):
+    print(f"💾 Пытаюсь сохранить {len(seen_ads)} хэшей в {SEEN_FILE}...")
     with open(SEEN_FILE, "w", encoding="utf-8") as f:
         json.dump(seen_ads, f, ensure_ascii=False, indent=2)
-    print(f"💾 Сохранено {len(seen_ads)} хэшей в {SEEN_FILE}")
+    # Проверка, действительно ли записано
+    with open(SEEN_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+        print(f"📂 Содержимое файла после записи:\n{content}")
 
 def get_ads():
     print(f"🌐 Загружаем страницу: {URL}")
@@ -46,8 +55,11 @@ def get_ads():
     return ads
 
 def send_to_telegram(bot, message):
-    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    print(f"📬 Отправлено: {message[:60]}")
+    try:
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+        print(f"📬 Отправлено: {message[:60]}")
+    except Exception as e:
+        print(f"❌ Ошибка отправки в Telegram: {e}")
 
 def main():
     print("▶️ Бот запущен. Проверка объявлений...")
