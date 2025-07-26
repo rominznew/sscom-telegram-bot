@@ -2,7 +2,7 @@ name: SS.COM Telegram Bot
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # каждые 30 минут
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          persist-credentials: true  # нужно для git push
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -27,6 +27,9 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python sscom_bot.py
+
+      - name: Show seen_ads.json content
+        run: cat seen_ads.json || echo "Файл не найден!"
 
       - name: Commit and push seen_ads.json
         run: |
