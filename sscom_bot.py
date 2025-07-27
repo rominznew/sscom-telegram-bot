@@ -8,7 +8,7 @@ from telegram import Bot
 SEEN_FILE = "seen_ads.json"
 URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+CHAT_ID = os.getenv("CHAT_ID")
 
 # === Загрузка уже виденных объявлений ===
 def load_seen_ads():
