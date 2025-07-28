@@ -1,9 +1,9 @@
 name: SS.com Telegram Bot
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"   # Основной запуск каждые 10 минут (страховка)
+    - cron: "0 * * * *"  # 1 раз в час для подстраховки
+  workflow_dispatch:       # ручной запуск через API
 
 jobs:
   run-bot:
@@ -37,12 +37,3 @@ jobs:
           git add seen_ads.json
           git commit -m "Update seen_ads.json" || echo "No changes to commit"
           git push
-
-      - name: Sleep and trigger next run
-        run: |
-          echo "⏳ Ждём 10 минут перед повторным запуском..."
-          sleep 600
-          echo "🚀 Запускаем workflow снова!"
-          gh workflow run "SS.com Telegram Bot"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
