@@ -1,14 +1,9 @@
 name: SS.com Telegram Bot
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "*/10 * * * *"       # каждые 10 минут
-    - cron: "5-59/10 * * * *"    # сдвиг на 5 минут (5, 15, 25, ...)
-  workflow_dispatch:             # ручной запуск
-
-concurrency:
-  group: sscom-bot
-  cancel-in-progress: true
+    - cron: "*/10 * * * *"   # Основной запуск каждые 10 минут (страховка)
 
 jobs:
   run-bot:
@@ -36,10 +31,18 @@ jobs:
         run: python sscom_bot.py
 
       - name: Commit and push seen_ads.json
-        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add seen_ads.json
           git commit -m "Update seen_ads.json" || echo "No changes to commit"
           git push
+
+      - name: Sleep and trigger next run
+        run: |
+          echo "⏳ Ждём 10 минут перед повторным запуском..."
+          sleep 600
+          echo "🚀 Запускаем workflow снова!"
+          gh workflow run "SS.com Telegram Bot"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
