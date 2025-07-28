@@ -9,6 +9,7 @@ SEEN_FILE = "seen_ads.json"
 URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+FILTER_KEYWORD = "119"  # Ключевое слово для фильтрации
 
 # === Загрузка уже виденных объявлений ===
 def load_seen_ads():
@@ -79,12 +80,17 @@ def main():
 
     new_ads = []
     for title, link in ads:
+        # Фильтрация объявлений
+        if FILTER_KEYWORD not in title:
+            print(f"⏩ Пропущено (не 119 серия): {title}")
+            continue
+
         hash_id = hashlib.sha256((title + link).encode("utf-8")).hexdigest()
         if hash_id not in seen_ads:
             new_ads.append((title, link))
             seen_ads.append(hash_id)
 
-    print(f"🆕 Найдено {len(new_ads)} новых объявлений.")
+    print(f"🆕 Найдено {len(new_ads)} новых объявлений (фильтр: {FILTER_KEYWORD}).")
     if new_ads:
         messages = [f"{title}\n{link}" for title, link in new_ads]
         send_to_telegram(messages)
