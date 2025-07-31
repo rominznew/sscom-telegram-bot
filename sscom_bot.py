@@ -10,7 +10,7 @@ URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-# === Загрузка уже виденных объявлений ===
+
 def load_seen_ads():
     if not os.path.exists(SEEN_FILE):
         print(f"⚠️ Файл {SEEN_FILE} не найден. Создаём пустой []")
@@ -24,7 +24,7 @@ def load_seen_ads():
         print(f"❌ Ошибка чтения {SEEN_FILE}: {e}")
         return []
 
-# === Сохранение новых объявлений ===
+
 def save_seen_ads(seen_ads):
     try:
         with open(SEEN_FILE, "w", encoding="utf-8") as f:
@@ -33,7 +33,7 @@ def save_seen_ads(seen_ads):
     except Exception as e:
         print(f"❌ Ошибка записи {SEEN_FILE}: {e}")
 
-# === Получение объявлений ===
+
 def fetch_ads():
     print(f"🌐 Загружаем страницу: {URL}")
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -56,9 +56,10 @@ def fetch_ads():
     print(f"🔍 Найдено {len(ads)} объявлений (всего на странице).")
     return ads
 
-# === Проверка, упоминается ли "119 серия" внутри объявления ===
+
 def is_119_series(link):
     try:
+        print(f"🔎 Проверяем: {link}")
         headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(link, headers=headers, timeout=10)
         if response.status_code != 200:
@@ -66,12 +67,23 @@ def is_119_series(link):
             return False
         soup = BeautifulSoup(response.text, "html.parser")
         content = soup.get_text().lower()
-        return any(variant in content for variant in ["119. серия", "119 серия", "119серия"])
+
+        keywords = [
+            "119 серия", "119. серия", "119-я серия", "119я серия",
+            "серия 119", "серия 119-я", "серии 119", "119-я", "119я"
+        ]
+
+        if any(keyword in content for keyword in keywords):
+            print("✅ Найдена 119 серия")
+            return True
+        else:
+            print("⏩ Пропущено (не 119 серия):", link)
+            return False
     except Exception as e:
         print(f"❌ Ошибка при проверке 119 серии: {e}")
         return False
 
-# === Отправка в Telegram ===
+
 def send_to_telegram(messages):
     if not TELEGRAM_TOKEN or not CHAT_ID:
         print("❌ TELEGRAM_TOKEN или CHAT_ID не заданы!")
@@ -84,7 +96,7 @@ def send_to_telegram(messages):
         except Exception as e:
             print(f"❌ Ошибка отправки: {e}")
 
-# === Главная функция ===
+
 def main():
     print("▶️ Бот запущен. Проверка объявлений...")
     seen_ads = load_seen_ads()
@@ -95,14 +107,10 @@ def main():
         hash_id = hashlib.sha256((title + link).encode("utf-8")).hexdigest()
         if hash_id in seen_ads:
             continue
-
-        print(f"🔎 Проверяем: {title}")
-        if is_119_series(link):
-            print("✅ Объявление соответствует 119 серии.")
-            new_ads.append((title, link))
-            seen_ads.append(hash_id)
-        else:
-            print("⏩ Пропущено (не 119 серия):", link)
+        if not is_119_series(link):
+            continue
+        new_ads.append((title, link))
+        seen_ads.append(hash_id)
 
     print(f"🆕 Найдено {len(new_ads)} новых объявлений (фильтр: 119).")
     if new_ads:
@@ -111,6 +119,7 @@ def main():
         save_seen_ads(seen_ads)
     else:
         print("ℹ️ Новых подходящих объявлений нет.")
+
 
 if __name__ == "__main__":
     main()
