@@ -9,7 +9,6 @@ SEEN_FILE = "seen_ads.json"
 URL = "https://www.ss.com/ru/real-estate/flats/riga/ziepniekkalns/"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-FILTER_KEYWORD = "119"  # Ключевое слово для фильтрации
 
 # === Загрузка уже виденных объявлений ===
 def load_seen_ads():
@@ -31,8 +30,6 @@ def save_seen_ads(seen_ads):
         with open(SEEN_FILE, "w", encoding="utf-8") as f:
             json.dump(seen_ads, f, ensure_ascii=False, indent=2)
         print(f"💾 Сохранено {len(seen_ads)} хэшей в {SEEN_FILE}")
-        with open(SEEN_FILE, "r", encoding="utf-8") as f:
-            print(f"📂 Содержимое файла после записи: {f.read()}")
     except Exception as e:
         print(f"❌ Ошибка записи {SEEN_FILE}: {e}")
 
@@ -59,6 +56,21 @@ def fetch_ads():
     print(f"🔍 Найдено {len(ads)} объявлений (всего на странице).")
     return ads
 
+# === Проверка, упоминается ли "119 серия" внутри объявления ===
+def is_119_series(link):
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(link, headers=headers, timeout=10)
+        if response.status_code != 200:
+            print(f"⚠️ Не удалось загрузить: {link}")
+            return False
+        soup = BeautifulSoup(response.text, "html.parser")
+        content = soup.get_text().lower()
+        return any(variant in content for variant in ["119. серия", "119 серия", "119серия"])
+    except Exception as e:
+        print(f"❌ Ошибка при проверке 119 серии: {e}")
+        return False
+
 # === Отправка в Telegram ===
 def send_to_telegram(messages):
     if not TELEGRAM_TOKEN or not CHAT_ID:
@@ -80,23 +92,25 @@ def main():
 
     new_ads = []
     for title, link in ads:
-        # Фильтрация объявлений
-        if FILTER_KEYWORD not in title:
-            print(f"⏩ Пропущено (не 119 серия): {title}")
+        hash_id = hashlib.sha256((title + link).encode("utf-8")).hexdigest()
+        if hash_id in seen_ads:
             continue
 
-        hash_id = hashlib.sha256((title + link).encode("utf-8")).hexdigest()
-        if hash_id not in seen_ads:
+        print(f"🔎 Проверяем: {title}")
+        if is_119_series(link):
+            print("✅ Объявление соответствует 119 серии.")
             new_ads.append((title, link))
             seen_ads.append(hash_id)
+        else:
+            print("⏩ Пропущено (не 119 серия):", link)
 
-    print(f"🆕 Найдено {len(new_ads)} новых объявлений (фильтр: {FILTER_KEYWORD}).")
+    print(f"🆕 Найдено {len(new_ads)} новых объявлений (фильтр: 119).")
     if new_ads:
         messages = [f"{title}\n{link}" for title, link in new_ads]
         send_to_telegram(messages)
         save_seen_ads(seen_ads)
     else:
-        print("ℹ️ Новых объявлений нет.")
+        print("ℹ️ Новых подходящих объявлений нет.")
 
 if __name__ == "__main__":
     main()
